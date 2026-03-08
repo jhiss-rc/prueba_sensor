@@ -11,6 +11,8 @@
 <p id="estado">Sistema en espera...</p>
 
 <script>
+let ultimaSacudida = 0;
+const intervaloSacudida = 800;
 
 let ultimaMagnitud = 0;
 let filtro = 0;
@@ -54,23 +56,29 @@ const detectarMovimiento = (event) => {
     const y = acc.y || 0;
     const z = acc.z || 0;
 
-    // magnitud real del movimiento
-    const magnitud = Math.sqrt(x*x + y*y + z*z);
+    // normalizar contra gravedad terrestre
+    const gX = x / 9.81;
+    const gY = y / 9.81;
+    const gZ = z / 9.81;
 
-    // diferencia respecto al último
-    const delta = Math.abs(magnitud - ultimaMagnitud);
-
-    ultimaMagnitud = magnitud;
-
-    // filtro suavizado para eliminar ruido
-    filtro = filtro * 0.8 + delta * 0.2;
+    const fuerzaG = Math.sqrt(gX * gX + gY * gY + gZ * gZ);
 
     const ahora = Date.now();
 
-    if(filtro > limiteSacudida && (ahora - ultimoMovimiento) > tiempoMinMovimiento){
+    /*
+      patrón de sacudida:
+      >1.35G = sacudida real
+      filtro de tiempo evita repeticiones
+    */
 
-        ultimoMovimiento = ahora;
-        enviarAlerta();
+    if(fuerzaG > 1.35){
+
+        if(ahora - ultimaSacudida > intervaloSacudida){
+
+            ultimaSacudida = ahora;
+            enviarAlerta();
+
+        }
 
     }
 
