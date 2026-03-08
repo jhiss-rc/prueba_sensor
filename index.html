@@ -11,23 +11,11 @@
 <p id="estado">Sistema en espera...</p>
 
 <script>
-let ultimaSacudida = 0;
-const intervaloSacudida = 800;
-
-let ultimaMagnitud = 0;
-let filtro = 0;
 
 let ultimoToque = 0;
 let contadorToques = 0;
 
 let alertaActivada = false;
-let ultimoMovimiento = 0;
-
-// sensibilidad equilibrada entre celulares
-const limiteSacudida = 3.5;
-
-// evita múltiples activaciones seguidas
-const tiempoMinMovimiento = 1200;
 
 const tiempoEntreToques = 900;
 const toquesNecesarios = 8;
@@ -46,45 +34,7 @@ const enviarAlerta = () => {
 
 };
 
-const detectarMovimiento = (event) => {
-
-    if(alertaActivada) return;
-
-    const acc = event.accelerationIncludingGravity;
-    if(!acc) return;
-
-    const x = acc.x || 0;
-    const y = acc.y || 0;
-    const z = acc.z || 0;
-
-    // normalizar contra gravedad terrestre
-    const gX = x / 9.81;
-    const gY = y / 9.81;
-    const gZ = z / 9.81;
-
-    const fuerzaG = Math.sqrt(gX * gX + gY * gY + gZ * gZ);
-
-    const ahora = Date.now();
-
-    /*
-      patrón de sacudida:
-      >1.35G = sacudida real
-      filtro de tiempo evita repeticiones
-    */
-
-    if(fuerzaG > 1.35){
-
-        if(ahora - ultimaSacudida > intervaloSacudida){
-
-            ultimaSacudida = ahora;
-            enviarAlerta();
-
-        }
-
-    }
-
-};
-
+// DETECCIÓN POR TOQUES
 const detectarToques = () => {
 
     if(alertaActivada) return;
@@ -99,49 +49,69 @@ const detectarToques = () => {
 
     ultimoToque = ahora;
 
-   
-
     if(contadorToques >= toquesNecesarios){
-
         enviarAlerta();
-
     }
 
 };
 
-const iniciarSensores = async () => {
+// RECONOCIMIENTO DE VOZ
+const iniciarReconocimientoVoz = () => {
 
-    try{
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-        if(typeof DeviceMotionEvent !== "undefined" &&
-           typeof DeviceMotionEvent.requestPermission === "function"){
+    if(!SpeechRecognition){
+        estado.innerText = "Reconocimiento de voz no soportado en este navegador";
+        return;
+    }
 
-            const permiso = await DeviceMotionEvent.requestPermission();
+    const reconocimiento = new SpeechRecognition();
 
-            if(permiso !== "granted"){
-                estado.innerText = "Permiso de sensores denegado";
-                return;
-            }
+    reconocimiento.lang = "es-ES";
+    reconocimiento.continuous = true;
+    reconocimiento.interimResults = false;
 
+    reconocimiento.onresult = (event) => {
+
+        if(alertaActivada) return;
+
+        const texto = event.results[event.results.length - 1][0].transcript.toLowerCase();
+
+        console.log("Escuchado:", texto);
+
+        if(
+            texto.includes("alerta") ||
+            texto.includes("ayuda") ||
+            texto.includes("emergencia")
+        ){
+            enviarAlerta();
         }
 
-        window.addEventListener("devicemotion", detectarMovimiento);
+    };
 
-        estado.innerText = "Sistema activo 📱";
+    reconocimiento.onerror = (error) => {
+        console.log("Error de voz:", error);
+    };
 
-    }
-    catch(error){
+    reconocimiento.start();
 
-        estado.innerText = "Error activando sensores";
-        console.error(error);
+};
 
+// PREGUNTAR PERMISO AL INICIAR
+window.onload = () => {
+
+    estado.innerText = "Sistema activo 📱";
+
+    const activarVoz = confirm("¿Deseas activar el reconocimiento por voz para emergencias?");
+
+    if(activarVoz){
+        iniciarReconocimientoVoz();
     }
 
 };
 
+// ACTIVAR DETECCIÓN DE TOQUES
 document.addEventListener("touchstart", detectarToques);
-
-iniciarSensores();
 
 </script>
 
