@@ -9,6 +9,7 @@
 
 <h2>Sistema de alerta</h2>
 <p id="estado">Sistema en espera...</p>
+
 <h3>Contacto de emergencia</h3>
 
 <input
@@ -67,15 +68,22 @@ let tiempo = 10;
 let reconocimiento = null;
 let vozActiva = false;
 
+let contactos = [];
 
+/* UBICACION GLOBAL */
+let lat = null;
+let lon = null;
+
+
+/* ENVIAR ALERTA */
 const enviarAlerta = () => {
 
+if(contactos.length === 0){
+alert("No hay contactos guardados");
+return;
+}
+
 estado.innerText = "⚠️ ALERTA DE EMERGENCIA ACTIVADA";
-
-navigator.geolocation.getCurrentPosition((pos)=>{
-
-const lat = pos.coords.latitude;
-const lon = pos.coords.longitude;
 
 const mensaje = `⚠️ ALERTA DE PELIGRO
 
@@ -92,154 +100,155 @@ window.open(url,"_blank");
 
 });
 
-});
-
 alertaEnProceso = false;
 contadorToques = 0;
 
 };
 
 
-// INICIAR CUENTA REGRESIVA
+/* CUENTA REGRESIVA */
 const iniciarCuentaRegresiva = () => {
 
-    if(alertaEnProceso) return;
+if(alertaEnProceso) return;
 
-    alertaEnProceso = true;
+alertaEnProceso = true;
 
-    tiempo = 10;
+tiempo = 10;
 
-    document.getElementById("ventanaAlerta").style.display = "block";
+document.getElementById("ventanaAlerta").style.display = "block";
 
-    temporizador = setInterval(()=>{
+temporizador = setInterval(()=>{
 
-        document.getElementById("contadorTexto").innerText =
-        "⚠️ Enviando alerta en " + tiempo + " segundos";
+document.getElementById("contadorTexto").innerText =
+"⚠️ Enviando alerta en " + tiempo + " segundos";
 
-        tiempo--;
+tiempo--;
 
-        if(tiempo < 0){
+if(tiempo < 0){
 
-            clearInterval(temporizador);
-            document.getElementById("ventanaAlerta").style.display = "none";
+clearInterval(temporizador);
 
-            enviarAlerta();
+document.getElementById("ventanaAlerta").style.display = "none";
 
-        }
+enviarAlerta();
 
-    },1000);
+}
+
+},1000);
 
 };
 
 
-// CANCELAR ALERTA
+/* CANCELAR ALERTA */
 const cancelarAlerta = () => {
 
-    clearInterval(temporizador);
+clearInterval(temporizador);
 
-    document.getElementById("ventanaAlerta").style.display = "none";
+document.getElementById("ventanaAlerta").style.display = "none";
 
-    alertaEnProceso = false;
-    contadorToques = 0;
+alertaEnProceso = false;
+contadorToques = 0;
 
-    estado.innerText = "Alerta cancelada";
+estado.innerText = "Alerta cancelada";
 
 };
 
 
-// DETECCIÓN POR TOQUES
+/* DETECCION DE TOQUES */
 const detectarToques = () => {
 
-    if(alertaEnProceso) return;
+if(alertaEnProceso) return;
 
-    const ahora = Date.now();
+const ahora = Date.now();
 
-    if(ahora - ultimoToque <= tiempoEntreToques){
-        contadorToques++;
-    }else{
-        contadorToques = 1;
-    }
+if(ahora - ultimoToque <= tiempoEntreToques){
+contadorToques++;
+}else{
+contadorToques = 1;
+}
 
-    ultimoToque = ahora;
+ultimoToque = ahora;
 
-    if(contadorToques >= toquesNecesarios){
-        iniciarCuentaRegresiva();
-    }
+if(contadorToques >= toquesNecesarios){
+iniciarCuentaRegresiva();
+}
 
 };
 
 
-// RECONOCIMIENTO DE VOZ
+/* RECONOCIMIENTO DE VOZ */
 const iniciarReconocimientoVoz = () => {
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-    if(!SpeechRecognition){
-        estado.innerText = "Reconocimiento de voz no soportado";
-        return;
-    }
+if(!SpeechRecognition){
+estado.innerText = "Reconocimiento de voz no soportado";
+return;
+}
 
-    reconocimiento = new SpeechRecognition();
+reconocimiento = new SpeechRecognition();
 
-    reconocimiento.lang = "es-ES";
-    reconocimiento.continuous = true;
-    reconocimiento.interimResults = false;
+reconocimiento.lang = "es-ES";
+reconocimiento.continuous = true;
 
-    reconocimiento.onresult = (event) => {
+reconocimiento.onresult = (event) => {
 
-        const texto = event.results[event.results.length - 1][0].transcript.toLowerCase();
+const texto = event.results[event.results.length - 1][0].transcript.toLowerCase();
 
-        console.log("Escuchado:", texto);
+if(
+texto.includes("alerta") ||
+texto.includes("ayuda") ||
+texto.includes("emergencia")
+){
+iniciarCuentaRegresiva();
+}
 
-        if(
-            texto.includes("alerta") ||
-            texto.includes("ayuda") ||
-            texto.includes("emergencia")
-        ){
-            iniciarCuentaRegresiva();
-        }
+};
 
-    };
+reconocimiento.onend = () => {
 
-    reconocimiento.onend = () => {
+if(vozActiva){
+reconocimiento.start();
+}
 
-        if(vozActiva){
-            reconocimiento.start();
-        }
+};
 
-    };
-
-    reconocimiento.onerror = (error) => {
-        console.log("Error de voz:", error);
-    };
-
-    reconocimiento.start();
+reconocimiento.start();
 
 };
 
 
-// PEDIR PERMISO SOLO AL INICIAR
+/* PEDIR PERMISOS AL INICIO */
 window.onload = () => {
 
-    estado.innerText = "Sistema activo 📱";
+estado.innerText = "Sistema activo 📱";
 
-    const activarVoz = confirm("¿Deseas activar el reconocimiento por voz para emergencias?");
+/* pedir ubicación al inicio */
+navigator.geolocation.getCurrentPosition((pos)=>{
 
-    if(activarVoz){
+lat = pos.coords.latitude;
+lon = pos.coords.longitude;
 
-        vozActiva = true;
-        iniciarReconocimientoVoz();
+});
 
-    }
+/* activar voz */
+const activarVoz = confirm("¿Deseas activar el reconocimiento por voz para emergencias?");
+
+if(activarVoz){
+
+vozActiva = true;
+iniciarReconocimientoVoz();
+
+}
 
 };
 
 
-// ACTIVAR DETECCIÓN DE TOQUES
+/* DETECTAR TOQUES */
 document.addEventListener("touchstart", detectarToques);
 
-let contactos = [];
 
+/* AGREGAR CONTACTOS */
 const agregarContacto = () => {
 
 const numero = document.getElementById("numeroContacto").value;
