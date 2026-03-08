@@ -12,8 +12,6 @@
 
 <script>
 
-let ultimoMovimiento = 0;
-
 let ultimoX = null;
 let ultimoY = null;
 let ultimoZ = null;
@@ -21,22 +19,28 @@ let ultimoZ = null;
 let ultimoToque = 0;
 let contadorToques = 0;
 
-const limiteSacudida = 12;   // sensibilidad controlada
-const tiempoEspera = 4000;
+let alertaActivada = false;
 
-const tiempoEntreToques = 1200;
+const limiteSacudida = 14;     // equilibrio entre celulares
+const tiempoEntreToques = 1000;
 const toquesNecesarios = 10;
 
 const estado = document.getElementById("estado");
 
 const enviarAlerta = () => {
 
+    if(alertaActivada) return;
+
+    alertaActivada = true;
+
     estado.innerText = "⚠️ ALERTA DE EMERGENCIA ACTIVADA";
-    console.log("ALERTA DE EMERGENCIA ACTIVADA");
+    console.log("ALERTA ACTIVADA");
 
 };
 
 const detectarMovimiento = (event) => {
+
+    if(alertaActivada) return;
 
     const acc = event.accelerationIncludingGravity;
     if(!acc) return;
@@ -65,20 +69,15 @@ const detectarMovimiento = (event) => {
 
     if(delta > limiteSacudida){
 
-        const ahora = Date.now();
-
-        if(ahora - ultimoMovimiento > tiempoEspera){
-
-            ultimoMovimiento = ahora;
-            enviarAlerta();
-
-        }
+        enviarAlerta();
 
     }
 
 };
 
 const detectarToques = () => {
+
+    if(alertaActivada) return;
 
     const ahora = Date.now();
 
@@ -94,7 +93,6 @@ const detectarToques = () => {
 
     if(contadorToques >= toquesNecesarios){
 
-        contadorToques = 0;
         enviarAlerta();
 
     }
