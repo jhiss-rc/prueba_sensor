@@ -7,8 +7,8 @@
 
 <body>
 
-<h2>Detector de alerta</h2>
-<p id="estado">Esperando acción...</p>
+<h2>Sistema de alerta</h2>
+<p id="estado">Sistema en espera...</p>
 
 <script>
 
@@ -16,24 +16,24 @@ let ultimoMovimiento = 0;
 let ultimoToque = 0;
 let contadorToques = 0;
 
-const limiteMovimiento = 25;
+const limiteMovimiento = 15;      // antes 25 → ahora más sensible
 const tiempoEspera = 4000;
-const tiempoEntreToques = 600;
-const toquesNecesarios = 3;
+
+const tiempoEntreToques = 700;    // tiempo máximo entre toques
+const toquesNecesarios = 10;      // ahora 10 toques
 
 const estado = document.getElementById("estado");
 
 const enviarAlerta = () => {
 
-    estado.innerText = "🚨 ALERTA ACTIVADA";
-    console.log("ALERTA ACTIVADA");
+    estado.innerText = "⚠️ ALERTA DE EMERGENCIA ACTIVADA";
+    console.log("ALERTA DE EMERGENCIA ACTIVADA");
 
 };
 
 const detectarMovimiento = (event) => {
 
     const acc = event.accelerationIncludingGravity;
-
     if(!acc) return;
 
     const total =
