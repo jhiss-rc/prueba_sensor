@@ -16,6 +16,7 @@ let ultimoToque = 0;
 let contadorToques = 0;
 
 let alertaActivada = false;
+let procesoAlerta = false;
 
 const tiempoEntreToques = 900;
 const toquesNecesarios = 8;
@@ -24,20 +25,57 @@ const estado = document.getElementById("estado");
 
 const enviarAlerta = () => {
 
-    if(alertaActivada) return;
-
-    alertaActivada = true;
-
     estado.innerText = "⚠️ ALERTA DE EMERGENCIA ACTIVADA";
     console.log("ALERTA ACTIVADA");
     alert("⚠️ ALERTA DE EMERGENCIA ACTIVADA");
 
+    // volver al estado normal sin reiniciar página
+    procesoAlerta = false;
+    alertaActivada = false;
+    contadorToques = 0;
+
+    estado.innerText = "Sistema activo 📱";
+
 };
+
+
+// ventana de cancelación
+const confirmarAlerta = () => {
+
+    if(procesoAlerta) return;
+
+    procesoAlerta = true;
+
+    estado.innerText = "⚠️ Alerta detectada. Esperando 10 segundos para enviar...";
+
+    const cancelar = confirm(
+        "⚠️ Se enviará una alerta en 10 segundos.\n\nPresiona CANCELAR si fue un error."
+    );
+
+    if(cancelar === false){
+
+        estado.innerText = "Alerta cancelada";
+
+        procesoAlerta = false;
+        contadorToques = 0;
+
+        return;
+    }
+
+    setTimeout(() => {
+
+        alertaActivada = true;
+        enviarAlerta();
+
+    },10000);
+
+};
+
 
 // DETECCIÓN POR TOQUES
 const detectarToques = () => {
 
-    if(alertaActivada) return;
+    if(procesoAlerta) return;
 
     const ahora = Date.now();
 
@@ -50,10 +88,11 @@ const detectarToques = () => {
     ultimoToque = ahora;
 
     if(contadorToques >= toquesNecesarios){
-        enviarAlerta();
+        confirmarAlerta();
     }
 
 };
+
 
 // RECONOCIMIENTO DE VOZ
 const iniciarReconocimientoVoz = () => {
@@ -73,7 +112,7 @@ const iniciarReconocimientoVoz = () => {
 
     reconocimiento.onresult = (event) => {
 
-        if(alertaActivada) return;
+        if(procesoAlerta) return;
 
         const texto = event.results[event.results.length - 1][0].transcript.toLowerCase();
 
@@ -84,7 +123,7 @@ const iniciarReconocimientoVoz = () => {
             texto.includes("ayuda") ||
             texto.includes("emergencia")
         ){
-            enviarAlerta();
+            confirmarAlerta();
         }
 
     };
@@ -97,7 +136,8 @@ const iniciarReconocimientoVoz = () => {
 
 };
 
-// PREGUNTAR PERMISO AL INICIAR
+
+// PREGUNTAR PERMISO SOLO AL CARGAR LA PÁGINA
 window.onload = () => {
 
     estado.innerText = "Sistema activo 📱";
@@ -110,7 +150,8 @@ window.onload = () => {
 
 };
 
-// ACTIVAR DETECCIÓN DE TOQUES
+
+// DETECCIÓN DE TOQUES
 document.addEventListener("touchstart", detectarToques);
 
 </script>
