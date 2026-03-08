@@ -42,6 +42,7 @@ const enviarAlerta = () => {
 
     estado.innerText = "⚠️ ALERTA DE EMERGENCIA ACTIVADA";
     console.log("ALERTA ACTIVADA");
+    alert("⚠️ ALERTA DE EMERGENCIA ACTIVADA");
 
 };
 
@@ -98,7 +99,7 @@ const detectarToques = () => {
 
     ultimoToque = ahora;
 
-    estado.innerText = "Toques detectados: " + contadorToques;
+   
 
     if(contadorToques >= toquesNecesarios){
 
