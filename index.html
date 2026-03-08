@@ -12,18 +12,23 @@
 
 <script>
 
-let ultimoX = null;
-let ultimoY = null;
-let ultimoZ = null;
+let ultimaMagnitud = 0;
+let filtro = 0;
 
 let ultimoToque = 0;
 let contadorToques = 0;
 
 let alertaActivada = false;
+let ultimoMovimiento = 0;
 
-const limiteSacudida = 14;     // equilibrio entre celulares
-const tiempoEntreToques = 1000;
-const toquesNecesarios = 10;
+// sensibilidad equilibrada entre celulares
+const limiteSacudida = 3.5;
+
+// evita múltiples activaciones seguidas
+const tiempoMinMovimiento = 1200;
+
+const tiempoEntreToques = 900;
+const toquesNecesarios = 8;
 
 const estado = document.getElementById("estado");
 
@@ -49,26 +54,22 @@ const detectarMovimiento = (event) => {
     const y = acc.y || 0;
     const z = acc.z || 0;
 
-    if(ultimoX === null){
+    // magnitud real del movimiento
+    const magnitud = Math.sqrt(x*x + y*y + z*z);
 
-        ultimoX = x;
-        ultimoY = y;
-        ultimoZ = z;
-        return;
+    // diferencia respecto al último
+    const delta = Math.abs(magnitud - ultimaMagnitud);
 
-    }
+    ultimaMagnitud = magnitud;
 
-    const delta =
-        Math.abs(x - ultimoX) +
-        Math.abs(y - ultimoY) +
-        Math.abs(z - ultimoZ);
+    // filtro suavizado para eliminar ruido
+    filtro = filtro * 0.8 + delta * 0.2;
 
-    ultimoX = x;
-    ultimoY = y;
-    ultimoZ = z;
+    const ahora = Date.now();
 
-    if(delta > limiteSacudida){
+    if(filtro > limiteSacudida && (ahora - ultimoMovimiento) > tiempoMinMovimiento){
 
+        ultimoMovimiento = ahora;
         enviarAlerta();
 
     }
