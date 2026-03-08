@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Detector de movimiento</title>
+</head>
+
+<body>
+
+<h2>Detector de movimiento</h2>
+
+<button id="activar">Activar sensores</button>
+
+<p id="estado">Sensores desactivados</p>
+
+<script>
+
+let ultimoMovimiento = 0;
+let sensoresActivos = false;
+const limiteMovimiento = 30;
+const tiempoEspera = 5000;
+
+const estado = document.getElementById("estado");
+const boton = document.getElementById("activar");
+
+const enviarAlerta = () => {
+
+    estado.innerText = "🚨 Movimiento detectado";
+    console.log("Movimiento detectado");
+
+};
+
+const detectarMovimiento = (event) => {
+
+    if(!sensoresActivos) return;
+
+    const acc = event.accelerationIncludingGravity;
+
+    if(!acc) return;
+
+    const total =
+        Math.abs(acc.x || 0) +
+        Math.abs(acc.y || 0) +
+        Math.abs(acc.z || 0);
+
+    if(total > limiteMovimiento){
+
+        const ahora = Date.now();
+
+        if(ahora - ultimoMovimiento > tiempoEspera){
+
+            ultimoMovimiento = ahora;
+            enviarAlerta();
+
+        }
+
+    }
+
+};
+
+const activarSensores = async () => {
+
+    try{
+
+        if(typeof DeviceMotionEvent !== "undefined" &&
+           typeof DeviceMotionEvent.requestPermission === "function"){
+
+            const permiso = await DeviceMotionEvent.requestPermission();
+
+            if(permiso !== "granted"){
+                estado.innerText = "Permiso de sensores denegado";
+                return;
+            }
+
+        }
+
+        window.addEventListener("devicemotion", detectarMovimiento);
+
+        sensoresActivos = true;
+
+        estado.innerText = "Sensores activos 📱";
+
+    }
+    catch(error){
+
+        estado.innerText = "Error activando sensores";
+        console.error(error);
+
+    }
+
+};
+
+boton.addEventListener("click", activarSensores);
+
+</script>
+
+</body>
+</html>
