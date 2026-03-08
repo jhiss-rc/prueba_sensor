@@ -166,10 +166,22 @@ const iniciarReconocimientoVoz = () => {
 
     };
 
+    // si el reconocimiento se detiene, lo vuelve a iniciar
+    reconocimiento.onend = () => {
+
+        if(!alertaEnProceso){
+            reconocimiento.start();
+        }
+
+    };
+
+    reconocimiento.onerror = (error) => {
+        console.log("Error de voz:", error);
+    };
+
     reconocimiento.start();
 
 };
-
 
 // PEDIR PERMISO SOLO AL CARGAR LA PÁGINA
 window.onload = () => {
