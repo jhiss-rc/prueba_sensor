@@ -14,7 +14,6 @@
 
 let ultimoToque = 0;
 let contadorToques = 0;
-
 let alertaActivada = false;
 
 const tiempoEntreToques = 900;
@@ -61,7 +60,7 @@ const iniciarReconocimientoVoz = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if(!SpeechRecognition){
-        estado.innerText = "Reconocimiento de voz no soportado en este navegador";
+        console.log("Reconocimiento de voz no soportado");
         return;
     }
 
@@ -70,6 +69,12 @@ const iniciarReconocimientoVoz = () => {
     reconocimiento.lang = "es-ES";
     reconocimiento.continuous = true;
     reconocimiento.interimResults = false;
+
+    // cuando realmente empieza a escuchar
+    reconocimiento.onstart = () => {
+        estado.innerText = "🎤 Escuchando...";
+        console.log("Micrófono activo");
+    };
 
     reconocimiento.onresult = (event) => {
 
@@ -90,10 +95,28 @@ const iniciarReconocimientoVoz = () => {
     };
 
     reconocimiento.onerror = (error) => {
-        console.log("Error de voz:", error);
+
+        console.log("Error voz:", error);
+
+        // si se niega el permiso, seguir solo con toques
+        if(error.error === "not-allowed"){
+            estado.innerText = "Sistema activo (solo toques)";
+        }
+
     };
 
-    reconocimiento.start();
+    // reiniciar si el navegador lo detiene
+    reconocimiento.onend = () => {
+        if(!alertaActivada){
+            reconocimiento.start();
+        }
+    };
+
+    try{
+        reconocimiento.start();
+    }catch(e){
+        console.log("No se pudo iniciar voz");
+    }
 
 };
 
@@ -105,7 +128,10 @@ window.onload = () => {
     const activarVoz = confirm("¿Deseas activar el reconocimiento por voz para emergencias?");
 
     if(activarVoz){
-        iniciarReconocimientoVoz();
+
+        // algunos navegadores requieren interacción del usuario
+        document.addEventListener("touchstart", iniciarReconocimientoVoz, {once:true});
+
     }
 
 };
