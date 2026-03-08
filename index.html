@@ -10,18 +10,46 @@
 <h2>Sistema de alerta</h2>
 <p id="estado">Sistema en espera...</p>
 
+<div id="ventanaAlerta" style="
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.8);
+color:white;
+font-size:24px;
+text-align:center;
+padding-top:40%;
+">
+
+<p id="contadorTexto">⚠️ Enviando alerta en 10 segundos</p>
+
+<button onclick="cancelarAlerta()" style="
+font-size:20px;
+padding:10px 20px;
+margin-top:20px;
+">
+Cancelar
+</button>
+
+</div>
+
 <script>
 
 let ultimoToque = 0;
 let contadorToques = 0;
 
-let alertaActivada = false;
-let procesoAlerta = false;
+let alertaEnProceso = false;
 
 const tiempoEntreToques = 900;
 const toquesNecesarios = 8;
 
 const estado = document.getElementById("estado");
+
+let temporizador = null;
+let tiempo = 10;
 
 const enviarAlerta = () => {
 
@@ -29,9 +57,7 @@ const enviarAlerta = () => {
     console.log("ALERTA ACTIVADA");
     alert("⚠️ ALERTA DE EMERGENCIA ACTIVADA");
 
-    // volver al estado normal sin reiniciar página
-    procesoAlerta = false;
-    alertaActivada = false;
+    alertaEnProceso = false;
     contadorToques = 0;
 
     estado.innerText = "Sistema activo 📱";
@@ -39,35 +65,49 @@ const enviarAlerta = () => {
 };
 
 
-// ventana de cancelación
-const confirmarAlerta = () => {
+// INICIAR CUENTA REGRESIVA
+const iniciarCuentaRegresiva = () => {
 
-    if(procesoAlerta) return;
+    if(alertaEnProceso) return;
 
-    procesoAlerta = true;
+    alertaEnProceso = true;
 
-    estado.innerText = "⚠️ Alerta detectada. Esperando 10 segundos para enviar...";
+    tiempo = 10;
 
-    const cancelar = confirm(
-        "⚠️ Se enviará una alerta en 10 segundos.\n\nPresiona CANCELAR si fue un error."
-    );
+    document.getElementById("ventanaAlerta").style.display = "block";
 
-    if(cancelar === false){
+    temporizador = setInterval(()=>{
 
-        estado.innerText = "Alerta cancelada";
+        document.getElementById("contadorTexto").innerText =
+        "⚠️ Enviando alerta en " + tiempo + " segundos";
 
-        procesoAlerta = false;
-        contadorToques = 0;
+        tiempo--;
 
-        return;
-    }
+        if(tiempo < 0){
 
-    setTimeout(() => {
+            clearInterval(temporizador);
+            document.getElementById("ventanaAlerta").style.display = "none";
 
-        alertaActivada = true;
-        enviarAlerta();
+            enviarAlerta();
 
-    },10000);
+        }
+
+    },1000);
+
+};
+
+
+// CANCELAR ALERTA
+const cancelarAlerta = () => {
+
+    clearInterval(temporizador);
+
+    document.getElementById("ventanaAlerta").style.display = "none";
+
+    alertaEnProceso = false;
+    contadorToques = 0;
+
+    estado.innerText = "Alerta cancelada";
 
 };
 
@@ -75,7 +115,7 @@ const confirmarAlerta = () => {
 // DETECCIÓN POR TOQUES
 const detectarToques = () => {
 
-    if(procesoAlerta) return;
+    if(alertaEnProceso) return;
 
     const ahora = Date.now();
 
@@ -88,7 +128,7 @@ const detectarToques = () => {
     ultimoToque = ahora;
 
     if(contadorToques >= toquesNecesarios){
-        confirmarAlerta();
+        iniciarCuentaRegresiva();
     }
 
 };
@@ -100,7 +140,7 @@ const iniciarReconocimientoVoz = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if(!SpeechRecognition){
-        estado.innerText = "Reconocimiento de voz no soportado en este navegador";
+        estado.innerText = "Reconocimiento de voz no soportado";
         return;
     }
 
@@ -112,24 +152,18 @@ const iniciarReconocimientoVoz = () => {
 
     reconocimiento.onresult = (event) => {
 
-        if(procesoAlerta) return;
+        if(alertaEnProceso) return;
 
         const texto = event.results[event.results.length - 1][0].transcript.toLowerCase();
-
-        console.log("Escuchado:", texto);
 
         if(
             texto.includes("alerta") ||
             texto.includes("ayuda") ||
             texto.includes("emergencia")
         ){
-            confirmarAlerta();
+            iniciarCuentaRegresiva();
         }
 
-    };
-
-    reconocimiento.onerror = (error) => {
-        console.log("Error de voz:", error);
     };
 
     reconocimiento.start();
@@ -137,7 +171,7 @@ const iniciarReconocimientoVoz = () => {
 };
 
 
-// PREGUNTAR PERMISO SOLO AL CARGAR LA PÁGINA
+// PEDIR PERMISO SOLO AL CARGAR LA PÁGINA
 window.onload = () => {
 
     estado.innerText = "Sistema activo 📱";
@@ -151,7 +185,7 @@ window.onload = () => {
 };
 
 
-// DETECCIÓN DE TOQUES
+// ACTIVAR DETECCIÓN DE TOQUES
 document.addEventListener("touchstart", detectarToques);
 
 </script>
