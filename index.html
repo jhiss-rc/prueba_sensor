@@ -2,37 +2,35 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Detector de movimiento</title>
+<title>Detector de alerta</title>
 </head>
 
 <body>
 
-<h2>Detector de movimiento</h2>
-
-<button id="activar">Activar sensores</button>
-
-<p id="estado">Sensores desactivados</p>
+<h2>Detector de alerta</h2>
+<p id="estado">Esperando acción...</p>
 
 <script>
 
 let ultimoMovimiento = 0;
-let sensoresActivos = false;
-const limiteMovimiento = 30;
-const tiempoEspera = 5000;
+let ultimoToque = 0;
+let contadorToques = 0;
+
+const limiteMovimiento = 25;
+const tiempoEspera = 4000;
+const tiempoEntreToques = 600;
+const toquesNecesarios = 3;
 
 const estado = document.getElementById("estado");
-const boton = document.getElementById("activar");
 
 const enviarAlerta = () => {
 
-    estado.innerText = "🚨 Movimiento detectado";
-    console.log("Movimiento detectado");
+    estado.innerText = "🚨 ALERTA ACTIVADA";
+    console.log("ALERTA ACTIVADA");
 
 };
 
 const detectarMovimiento = (event) => {
-
-    if(!sensoresActivos) return;
 
     const acc = event.accelerationIncludingGravity;
 
@@ -58,7 +56,28 @@ const detectarMovimiento = (event) => {
 
 };
 
-const activarSensores = async () => {
+const detectarToques = () => {
+
+    const ahora = Date.now();
+
+    if(ahora - ultimoToque < tiempoEntreToques){
+        contadorToques++;
+    }else{
+        contadorToques = 1;
+    }
+
+    ultimoToque = ahora;
+
+    if(contadorToques >= toquesNecesarios){
+
+        contadorToques = 0;
+        enviarAlerta();
+
+    }
+
+};
+
+const iniciarSensores = async () => {
 
     try{
 
@@ -76,9 +95,7 @@ const activarSensores = async () => {
 
         window.addEventListener("devicemotion", detectarMovimiento);
 
-        sensoresActivos = true;
-
-        estado.innerText = "Sensores activos 📱";
+        estado.innerText = "Sistema activo 📱";
 
     }
     catch(error){
@@ -90,7 +107,10 @@ const activarSensores = async () => {
 
 };
 
-boton.addEventListener("click", activarSensores);
+document.addEventListener("touchstart", detectarToques);
+document.addEventListener("click", detectarToques);
+
+iniciarSensores();
 
 </script>
 
