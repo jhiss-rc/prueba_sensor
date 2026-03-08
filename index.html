@@ -223,13 +223,20 @@ window.onload = () => {
 
 estado.innerText = "Sistema activo 📱";
 
-/* pedir ubicación al inicio */
+/* preguntar por ubicación */
+
+const activarUbicacion = confirm("¿Deseas habilitar la ubicación para emergencias?");
+
+if(activarUbicacion){
+
 navigator.geolocation.getCurrentPosition((pos)=>{
 
 lat = pos.coords.latitude;
 lon = pos.coords.longitude;
 
 });
+
+}
 
 /* activar voz */
 const activarVoz = confirm("¿Deseas activar el reconocimiento por voz para emergencias?");
