@@ -9,6 +9,19 @@
 
 <h2>Sistema de alerta</h2>
 <p id="estado">Sistema en espera...</p>
+<h3>Contacto de emergencia</h3>
+
+<input
+type="text"
+id="numeroContacto"
+placeholder="Ej: 59171234567"
+/>
+
+<button onclick="agregarContacto()">
+Agregar contacto
+</button>
+
+<ul id="listaContactos"></ul>
 
 <div id="ventanaAlerta" style="
 display:none;
@@ -51,16 +64,38 @@ const estado = document.getElementById("estado");
 let temporizador = null;
 let tiempo = 10;
 
+let reconocimiento = null;
+let vozActiva = false;
+
+
 const enviarAlerta = () => {
 
-    estado.innerText = "⚠️ ALERTA DE EMERGENCIA ACTIVADA";
-    console.log("ALERTA ACTIVADA");
-    alert("⚠️ ALERTA DE EMERGENCIA ACTIVADA");
+estado.innerText = "⚠️ ALERTA DE EMERGENCIA ACTIVADA";
 
-    alertaEnProceso = false;
-    contadorToques = 0;
+navigator.geolocation.getCurrentPosition((pos)=>{
 
-    estado.innerText = "Sistema activo 📱";
+const lat = pos.coords.latitude;
+const lon = pos.coords.longitude;
+
+const mensaje = `⚠️ ALERTA DE PELIGRO
+
+La persona puede estar en riesgo.
+
+Ubicación:
+https://maps.google.com/?q=${lat},${lon}`;
+
+contactos.forEach(numero => {
+
+const url = `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
+
+window.open(url,"_blank");
+
+});
+
+});
+
+alertaEnProceso = false;
+contadorToques = 0;
 
 };
 
@@ -144,7 +179,7 @@ const iniciarReconocimientoVoz = () => {
         return;
     }
 
-    const reconocimiento = new SpeechRecognition();
+    reconocimiento = new SpeechRecognition();
 
     reconocimiento.lang = "es-ES";
     reconocimiento.continuous = true;
@@ -152,9 +187,9 @@ const iniciarReconocimientoVoz = () => {
 
     reconocimiento.onresult = (event) => {
 
-        if(alertaEnProceso) return;
-
         const texto = event.results[event.results.length - 1][0].transcript.toLowerCase();
+
+        console.log("Escuchado:", texto);
 
         if(
             texto.includes("alerta") ||
@@ -166,10 +201,9 @@ const iniciarReconocimientoVoz = () => {
 
     };
 
-    // si el reconocimiento se detiene, lo vuelve a iniciar
     reconocimiento.onend = () => {
 
-        if(!alertaEnProceso){
+        if(vozActiva){
             reconocimiento.start();
         }
 
@@ -183,7 +217,8 @@ const iniciarReconocimientoVoz = () => {
 
 };
 
-// PEDIR PERMISO SOLO AL CARGAR LA PÁGINA
+
+// PEDIR PERMISO SOLO AL INICIAR
 window.onload = () => {
 
     estado.innerText = "Sistema activo 📱";
@@ -191,7 +226,10 @@ window.onload = () => {
     const activarVoz = confirm("¿Deseas activar el reconocimiento por voz para emergencias?");
 
     if(activarVoz){
+
+        vozActiva = true;
         iniciarReconocimientoVoz();
+
     }
 
 };
@@ -199,6 +237,28 @@ window.onload = () => {
 
 // ACTIVAR DETECCIÓN DE TOQUES
 document.addEventListener("touchstart", detectarToques);
+
+let contactos = [];
+
+const agregarContacto = () => {
+
+const numero = document.getElementById("numeroContacto").value;
+
+if(numero==""){
+alert("Ingresa un número");
+return;
+}
+
+contactos.push(numero);
+
+const li = document.createElement("li");
+li.innerText = numero;
+
+document.getElementById("listaContactos").appendChild(li);
+
+document.getElementById("numeroContacto").value="";
+
+};
 
 </script>
 
